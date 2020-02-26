@@ -10,9 +10,15 @@ public class Rocket : MonoBehaviour
 
     [SerializeField] float rcsThrust = 100f;
     [SerializeField] float mainThrust = 100f;
-    [SerializeField] AudioClip mainEngine;
-    [SerializeField] AudioClip deathSound;
-    [SerializeField] AudioClip levelCompleteSound;
+    [SerializeField] float levelLoadDelay = 2f;
+    
+    [SerializeField] AudioClip mainEngine = default;
+    [SerializeField] AudioClip deathSound = default;
+    [SerializeField] AudioClip levelCompleteSound = default;
+
+    [SerializeField] ParticleSystem mainEngineParticles = default;
+    [SerializeField] ParticleSystem deathExplosionParticles = default;
+    [SerializeField] ParticleSystem levelCompleteParticles = default;
 
     enum State { Alive, Dying, Transcending }
     State state = State.Alive;
@@ -44,20 +50,34 @@ public class Rocket : MonoBehaviour
         switch(collision.gameObject.tag)
         {
             case "Friendly":
-                Debug.Log("OK");
                 break;
             case "Finish":
-                state = State.Transcending;
-                audioSource.PlayOneShot(levelCompleteSound);
-                Invoke("LoadNextLevel", 1f);
+                StartSuccessSequence();
                 break;
             default:
-                state = State.Dying;
-                audioSource.PlayOneShot(deathSound);
-                Debug.Log("Hit");
-                Invoke("LoadFirstLevel", 1f);
+                StartDeathSequence();
                 break;
         }
+    }
+
+    private void StartSuccessSequence()
+    {
+        state = State.Transcending;
+        audioSource.Stop();
+        mainEngineParticles.Stop();
+        audioSource.PlayOneShot(levelCompleteSound);
+        levelCompleteParticles.Play();
+        Invoke("LoadNextLevel", levelLoadDelay);
+    }
+
+    private void StartDeathSequence()
+    {
+        state = State.Dying;
+        audioSource.Stop();
+        mainEngineParticles.Stop();  
+        audioSource.PlayOneShot(deathSound);
+        deathExplosionParticles.Play();
+        Invoke("LoadFirstLevel", levelLoadDelay);
     }
 
     private void LoadFirstLevel()
@@ -80,6 +100,7 @@ public class Rocket : MonoBehaviour
         else
         {
             audioSource.Stop();
+            mainEngineParticles.Stop();
         }
     }
 
@@ -90,6 +111,7 @@ public class Rocket : MonoBehaviour
         {
             audioSource.PlayOneShot(mainEngine);
         }
+        mainEngineParticles.Play();
     }
 
     private void RespondToRotationInput()
