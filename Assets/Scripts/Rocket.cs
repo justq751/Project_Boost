@@ -21,8 +21,7 @@ public class Rocket : MonoBehaviour
     [SerializeField] ParticleSystem deathExplosionParticles = default;
     [SerializeField] ParticleSystem levelCompleteParticles = default;
 
-    enum State { Alive, Dying, Transcending }
-    State state = State.Alive;
+    bool isTransitioning = false;
 
     bool collisionsDisabled = false;
 
@@ -34,7 +33,7 @@ public class Rocket : MonoBehaviour
 
     void Update()
     {
-        if (state == State.Alive)
+        if (!isTransitioning)
         {
             RespondToThurstInput();
             RespondToRotationInput();
@@ -59,7 +58,7 @@ public class Rocket : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (state != State.Alive || collisionsDisabled) { return; }
+        if (isTransitioning || collisionsDisabled) { return; }
 
         switch(collision.gameObject.tag)
         {
@@ -76,7 +75,7 @@ public class Rocket : MonoBehaviour
 
     private void StartSuccessSequence()
     {
-        state = State.Transcending;
+        isTransitioning = true;
         audioSource.Stop();
         mainEngineParticles.Stop();
         audioSource.PlayOneShot(levelCompleteSound);
@@ -86,7 +85,7 @@ public class Rocket : MonoBehaviour
 
     private void StartDeathSequence()
     {
-        state = State.Dying;
+        isTransitioning = true;
         audioSource.Stop();
         mainEngineParticles.Stop();  
         audioSource.PlayOneShot(deathSound);
@@ -119,9 +118,14 @@ public class Rocket : MonoBehaviour
         }
         else
         {
-            audioSource.Stop();
-            mainEngineParticles.Stop();
+            NewMethod();
         }
+    }
+
+    private void NewMethod()
+    {
+        audioSource.Stop();
+        mainEngineParticles.Stop();
     }
 
     private void ApplyThrust(float thrustThisFrame)
@@ -136,7 +140,7 @@ public class Rocket : MonoBehaviour
 
     private void RespondToRotationInput()
     {
-        rigidBody.freezeRotation = true; //take manual control of rotation
+        rigidBody.angularVelocity = Vector3.zero; //remove rotation due to physics
         float rotationThisFrame = rcsThrust * Time.deltaTime;
 
         if (Input.GetKey(KeyCode.A))
